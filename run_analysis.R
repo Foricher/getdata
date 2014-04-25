@@ -1,10 +1,11 @@
-cleanData <- function(dataDirectory, outputFileName) {
-    library('stringr')
+cleanData <- function(dir, outputFileName) {
+    require(stringr)
+    require(data.table)
     oldDirectory <- getwd()
-    setwd(dataDirectory)
+    setwd(dir)
 
     features <- getFeatures('features.txt')
-    labels <- read.table('activity_labels.txt')
+    activityLabels <- read.table('activity_labels.txt')
 
     allData <- mergeTrainAndTestData('train/X_train.txt', 'test/X_test.txt', features[,1])
     names(allData) <- str_replace_all(str_replace(tolower(features[,2]), "\\(\\)", ""), "-", "_")
@@ -15,24 +16,27 @@ cleanData <- function(dataDirectory, outputFileName) {
     subjects <- mergeFiles('train/subject_train.txt', 'test/subject_test.txt')
     names(subjects) <- c("subject")
     
-    ## allData <- cbind(subjects, activities, allData)
-    allData <- cbind(activities, allData)
+    allData <- cbind(subjects, activities, allData)
 
     setwd(oldDirectory)
     print(sprintf("Saving data fo file %s", outputFileName))
-    write.table(allData, file= outputFileName)
-    setwd(dataDirectory)
+    write.table(allData, file= outputFileName, row.names = FALSE, quote = FALSE)
 
-    setwd(oldDirectory)
-    bySubjects <- split(allData, subjects)
-    f <- function(x) {
-        ac <- x$activity
-        zzx <- split(x[, !(colnames(x) %in% c("activity"))], ac)
-        ##return (lapply(zzx, mean))
-        return (zzx)
-    }
-    xy <- lapply(bySubjects, f)
-    return (xy)
+    dt_data <- as.data.table(allData)
+    dt_means <- dt_data[, lapply(.SD, mean), by = c("subject", "activity")]
+
+    means <- as.data.frame(dt_means)
+    
+    activities <- means$activity
+    subjects <- means$subject
+    labels <- factor(activities, activityLabels[,1], activityLabels[,2])
+
+    means <- cbind(subjects, activities, labels, means[, !(names(means) %in% c("subject", "activity"))])
+    names(means)[1:3] = c("subject", "activity", "label")
+    
+    write.table(means, file = 'temp.txt', row.names = FALSE, quote = FALSE)
+
+    return(means)
 }
 
 mergeFiles <- function(trainFileName, testFileName) {
@@ -63,43 +67,4 @@ getActivities <- function(trainFileName, testFileName) {
 
 getSubjects <- function(trainFileName, testFileName) {
     return (mergeFiles('train/subject_train.txt', 'test/subject_test.txt'))
-}
-
-
-getData <- function(fileName, labels, subjects, features) {
-	data <- read.table(fileName)
-#	columns<-grep("std\\(\\)|mean\\(\\)", features[[2]])
-#	result <- features[columns,]
-	result <- data[,features[,1]]
-	names(result) <- features[,2]
-
-	labels <- read.table(labels)
-	names(labels) <- c("label")
-	result$label <- labels
-
-	subjects <- read.table(subjects)
-	names(subjects) <- c("subject")
-	result$subject <- subjects
-
-        return(result)
-}
-
-readFile <- function(fileNames, labels, subjects, features) {
-xxx<-lapply(c("test/X_test.txt", "train/X_train.txt"), read.table)
-	data <- read.table(fileName)
-	result <- data[,features[,1]]
-	names(result) <- features[,2]
-
-	labels <- read.table(labels)
-	names(labels) <- c("label")
-	result$label <- labels
-
-	subjects <- read.table(subjects)
-	names(subjects) <- c("subject")
-	result$subject <- subjects
-
-        return(result)
-	data <- read.table(fileName)
-	result <- data[,features[,1]]
-        return(result)
 }
