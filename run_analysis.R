@@ -1,14 +1,15 @@
-cleanData <- function(dir, outputFileName) {
+cleanData <- function() {
+    outputFileName <- 'tidy_data.txt'
+    averagesFileName <- 'averages.txt'
     require(stringr)
     require(data.table)
-    oldDirectory <- getwd()
-    setwd(dir)
 
     features <- getFeatures('features.txt')
     activityLabels <- read.table('activity_labels.txt')
 
     allData <- mergeTrainAndTestData('train/X_train.txt', 'test/X_test.txt', features[,1])
-    names(allData) <- str_replace_all(str_replace(tolower(features[,2]), "\\(\\)", ""), "-", "_")
+    ##names(allData) <- str_replace_all(str_replace(tolower(features[,2]), "\\(\\)", ""), "-", "_")
+    names(allData) <- features[,2]
     
     activities <- getActivities('train/y_train.txt', 'test/y_test.txt')
     names(activities) <- c("activity")
@@ -18,8 +19,7 @@ cleanData <- function(dir, outputFileName) {
     
     allData <- cbind(subjects, activities, allData)
 
-    setwd(oldDirectory)
-    print(sprintf("Saving data fo file %s", outputFileName))
+    print(sprintf("Saving data to file %s", outputFileName))
     write.table(allData, file= outputFileName, row.names = FALSE, quote = FALSE)
 
     dt_data <- as.data.table(allData)
@@ -34,7 +34,7 @@ cleanData <- function(dir, outputFileName) {
     means <- cbind(subjects, activities, labels, means[, !(names(means) %in% c("subject", "activity"))])
     names(means)[1:3] = c("subject", "activity", "label")
     
-    write.table(means, file = 'temp.txt', row.names = FALSE, quote = FALSE)
+    write.table(means, file = averagesFileName, row.names = FALSE, quote = FALSE)
 
     return(means)
 }
