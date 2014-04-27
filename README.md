@@ -1,8 +1,29 @@
+To make tidy data files, unpack data, removing directory structure, into same directory as 
+run_analysis.R. Following files are used:
+    activity_labels.txt
+    features.txt
+    subject_test.txt
+    subject_train.txt
+    X_test.txt
+    X_train.txt
+    y_train.txt
+    y_test.txt
+    
+Start R and execute cleanData from run_analysis.R. Function is taking no parameters. As side-effect, two output
+files are generated. First is tidy_data.txt with selected features of mesaurements data
+merged from train and test files. Second is averages.txt with mean values of measurements
+above, grouped by subject and activity. Those values are returned from function.
+
+Labels used in otput files:
+
 subject
+
     Subject code.
  
-activity 
-    Activity coded as numeric: 
+activity
+ 
+    Activity coded as numeric:
+     
         1 WALKING
         2 WALKING_UPSTAIRS
         3 WALKING_DOWNSTAIRS
@@ -11,6 +32,7 @@ activity
         6 LAYING
     
 label
+
     Activity
 
 Time domain: 

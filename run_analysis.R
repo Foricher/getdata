@@ -1,30 +1,40 @@
 cleanData <- function() {
-    outputFileName <- 'tidy_data.txt'
-    averagesFileName <- 'averages.txt'
     require(stringr)
     require(data.table)
+    outputFileName <- 'tidy_data.txt'
+    averagesFileName <- 'averages.txt'
 
+    ## Read and select features.
     features <- getFeatures('features.txt')
+    
+    ## Read activity labels.
     activityLabels <- read.table('activity_labels.txt')
 
-    allData <- mergeTrainAndTestData('train/X_train.txt', 'test/X_test.txt', features[,1])
+    ## Read and merge measurements data; keep only selected features.
+    allData <- mergeTrainAndTestData('X_train.txt', 'X_test.txt', features[,1])
     ##names(allData) <- str_replace_all(str_replace(tolower(features[,2]), "\\(\\)", ""), "-", "_")
     names(allData) <- features[,2]
     
-    activities <- getActivities('train/y_train.txt', 'test/y_test.txt')
+    ## Read and merge activity files.
+    activities <- getActivities('y_train.txt', 'y_test.txt')
     names(activities) <- c("activity")
     
-    subjects <- mergeFiles('train/subject_train.txt', 'test/subject_test.txt')
+    ## Read and merge subject files.
+    subjects <- getSubjects('subject_train.txt', 'subject_test.txt')
     names(subjects) <- c("subject")
     
+    ## Bind together subject, activities and measurements data.
     allData <- cbind(subjects, activities, allData)
 
+    ## Save tidy file with merged test and train measurements for selected features.
     print(sprintf("Saving data to file %s", outputFileName))
     write.table(allData, file= outputFileName, row.names = FALSE, quote = FALSE)
 
+    ## Using data.table for calculating measurements means for each subject and activity.
     dt_data <- as.data.table(allData)
     dt_means <- dt_data[, lapply(.SD, mean), by = c("subject", "activity")]
 
+    ## Convert data.table back to frame for final output.
     means <- as.data.frame(dt_means)
     
     activities <- means$activity
@@ -34,6 +44,7 @@ cleanData <- function() {
     means <- cbind(subjects, activities, labels, means[, !(names(means) %in% c("subject", "activity"))])
     names(means)[1:3] = c("subject", "activity", "label")
     
+    ## Write tidy data with means of measurements data.
     write.table(means, file = averagesFileName, row.names = FALSE, quote = FALSE)
 
     return(means)
@@ -62,9 +73,9 @@ getFeatures <- function(fileName) {
 }
 
 getActivities <- function(trainFileName, testFileName) {
-    return (mergeFiles('train/y_train.txt', 'test/y_test.txt'))
+    return (mergeFiles(trainFileName, testFileName))
 }
 
 getSubjects <- function(trainFileName, testFileName) {
-    return (mergeFiles('train/subject_train.txt', 'test/subject_test.txt'))
+    return (mergeFiles(trainFileName, testFileName))
 }
